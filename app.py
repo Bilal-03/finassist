@@ -469,13 +469,17 @@ def news():
         # MoneyControl — multiple dedicated feeds for top news coverage
         ("https://www.moneycontrol.com/rss/MCtopnews.xml",                           "MoneyControl",      "#ef4444"),
         ("https://www.moneycontrol.com/rss/marketreports.xml",                       "MoneyControl",      "#ef4444"),
+        ("https://www.moneycontrol.com/rss/latestnews.xml",                          "MoneyControl",      "#ef4444"),
         ("https://www.moneycontrol.com/rss/results.xml",                             "MoneyControl",      "#ef4444"),
+        ("https://www.moneycontrol.com/rss/business.xml",                            "MoneyControl",      "#ef4444"),
+        ("https://www.moneycontrol.com/rss/economy.xml",                             "MoneyControl",      "#ef4444"),
         # Mint — markets feed
         ("https://www.livemint.com/rss/markets",                                     "Mint",              "#0ea5e9"),
         ("https://www.livemint.com/rss/money",                                       "Mint",              "#0ea5e9"),
         # Business Standard — markets + economy
         ("https://www.business-standard.com/rss/markets-106.rss",                    "Business Standard", "#8b5cf6"),
         ("https://www.business-standard.com/rss/economy-policy-10301.rss",           "Business Standard", "#8b5cf6"),
+        ("https://www.business-standard.com/rss/finance-155.rss",                    "Business Standard", "#8b5cf6"),
         # Financial Express — market news
         ("https://www.financialexpress.com/market/feed/",                             "Financial Express", "#10b981"),
         # NDTV Profit
@@ -505,9 +509,12 @@ def news():
     ]
 
     headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "application/rss+xml, application/xml, text/xml, */*",
-        "Accept-Language": "en-US,en;q=0.9",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-IN,en-US;q=0.9,en;q=0.8",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Cache-Control": "no-cache",
+        "Referer": "https://www.google.com/",
     }
 
     cutoff = datetime.now(timezone.utc) - timedelta(hours=24)  # last 24h only
@@ -598,180 +605,140 @@ def news():
 @app.route("/mf_list")
 def mf_list():
     """
-    Returns a curated list of top mutual funds by AUM per category.
-    Scheme codes are verified AMFI codes for Direct-Growth plans.
-    Static list — AUM rankings are stable; update quarterly if needed.
+    Returns ALL Direct Plan - Growth mutual funds from AMFI via mfapi.in.
+    ~2,000 funds after filtering. Cached for 6 hours.
+    Categories extracted from fund names.
     """
-    FUNDS = [
-        # ── Large Cap ────────────────────────────────────────────────────────
-        {"code":120716,"name":"Mirae Asset Large Cap Fund - Direct Plan - Growth",               "cat":"Large Cap"},
-        {"code":120503,"name":"HDFC Top 100 Fund - Direct Plan - Growth",                        "cat":"Large Cap"},
-        {"code":120465,"name":"ICICI Prudential Bluechip Fund - Direct Plan - Growth",           "cat":"Large Cap"},
-        {"code":120586,"name":"SBI Bluechip Fund - Direct Plan - Growth",                        "cat":"Large Cap"},
-        {"code":120482,"name":"Axis Bluechip Fund - Direct Plan - Growth",                       "cat":"Large Cap"},
-        {"code":120594,"name":"Nippon India Large Cap Fund - Direct Plan - Growth",              "cat":"Large Cap"},
-        {"code":120828,"name":"Kotak Bluechip Fund - Direct Plan - Growth",                      "cat":"Large Cap"},
-        {"code":135781,"name":"Canara Robeco Bluechip Equity Fund - Direct Plan - Growth",       "cat":"Large Cap"},
-        {"code":120157,"name":"UTI Large Cap Fund - Direct Plan - Growth",                       "cat":"Large Cap"},
-        {"code":145552,"name":"DSP Top 100 Equity Fund - Direct Plan - Growth",                  "cat":"Large Cap"},
+    import time
 
-        # ── Mid Cap ──────────────────────────────────────────────────────────
-        {"code":120841,"name":"Kotak Emerging Equity Fund - Direct Plan - Growth",               "cat":"Mid Cap"},
-        {"code":120847,"name":"HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth",          "cat":"Mid Cap"},
-        {"code":120470,"name":"ICICI Prudential Midcap Fund - Direct Plan - Growth",             "cat":"Mid Cap"},
-        {"code":135800,"name":"Nippon India Growth Fund - Direct Plan - Growth",                 "cat":"Mid Cap"},
-        {"code":120494,"name":"SBI Magnum Midcap Fund - Direct Plan - Growth",                   "cat":"Mid Cap"},
-        {"code":120484,"name":"Axis Midcap Fund - Direct Plan - Growth",                         "cat":"Mid Cap"},
-        {"code":148510,"name":"Motilal Oswal Midcap Fund - Direct Plan - Growth",                "cat":"Mid Cap"},
-        {"code":120178,"name":"UTI Mid Cap Fund - Direct Plan - Growth",                         "cat":"Mid Cap"},
-        {"code":119598,"name":"DSP Midcap Fund - Direct Plan - Growth",                          "cat":"Mid Cap"},
-        {"code":135779,"name":"Canara Robeco Emerging Equities Fund - Direct Plan - Growth",     "cat":"Mid Cap"},
+    cache = getattr(mf_list, '_cache', None)
+    if cache and (time.time() - cache['ts']) < 21600:  # 6h
+        return jsonify(cache['data'])
 
-        # ── Small Cap ────────────────────────────────────────────────────────
-        {"code":120855,"name":"Kotak Small Cap Fund - Direct Plan - Growth",                     "cat":"Small Cap"},
-        {"code":120826,"name":"HDFC Small Cap Fund - Direct Plan - Growth",                      "cat":"Small Cap"},
-        {"code":120827,"name":"Nippon India Small Cap Fund - Direct Plan - Growth",              "cat":"Small Cap"},
-        {"code":120822,"name":"SBI Small Cap Fund - Direct Plan - Growth",                       "cat":"Small Cap"},
-        {"code":120485,"name":"Axis Small Cap Fund - Direct Plan - Growth",                      "cat":"Small Cap"},
-        {"code":120507,"name":"ICICI Prudential Smallcap Fund - Direct Plan - Growth",           "cat":"Small Cap"},
-        {"code":148462,"name":"Tata Small Cap Fund - Direct Plan - Growth",                      "cat":"Small Cap"},
-        {"code":120165,"name":"DSP Small Cap Fund - Direct Plan - Growth",                       "cat":"Small Cap"},
-        {"code":120155,"name":"UTI Small Cap Fund - Direct Plan - Growth",                       "cat":"Small Cap"},
-        {"code":135782,"name":"Canara Robeco Small Cap Fund - Direct Plan - Growth",             "cat":"Small Cap"},
-
-        # ── Flexi Cap ────────────────────────────────────────────────────────
-        {"code":120505,"name":"HDFC Flexi Cap Fund - Direct Plan - Growth",                      "cat":"Flexi Cap"},
-        {"code":120467,"name":"ICICI Prudential Flexi Cap Fund - Direct Plan - Growth",          "cat":"Flexi Cap"},
-        {"code":120583,"name":"Parag Parikh Flexi Cap Fund - Direct Plan - Growth",              "cat":"Flexi Cap"},
-        {"code":120486,"name":"Axis Flexi Cap Fund - Direct Plan - Growth",                      "cat":"Flexi Cap"},
-        {"code":120585,"name":"SBI Flexicap Fund - Direct Plan - Growth",                        "cat":"Flexi Cap"},
-        {"code":120848,"name":"Kotak Flexicap Fund - Direct Plan - Growth",                      "cat":"Flexi Cap"},
-        {"code":120598,"name":"Nippon India Flexi Cap Fund - Direct Plan - Growth",              "cat":"Flexi Cap"},
-        {"code":135786,"name":"Canara Robeco Flexi Cap Fund - Direct Plan - Growth",             "cat":"Flexi Cap"},
-        {"code":120167,"name":"UTI Flexi Cap Fund - Direct Plan - Growth",                       "cat":"Flexi Cap"},
-        {"code":148456,"name":"Motilal Oswal Flexi Cap Fund - Direct Plan - Growth",             "cat":"Flexi Cap"},
-
-        # ── Large & Mid Cap ──────────────────────────────────────────────────
-        {"code":120716,"name":"Mirae Asset Emerging Bluechip Fund - Direct Plan - Growth",       "cat":"Large & Mid Cap"},
-        {"code":120509,"name":"ICICI Prudential Large & Mid Cap Fund - Direct Plan - Growth",    "cat":"Large & Mid Cap"},
-        {"code":120836,"name":"HDFC Large and Mid Cap Fund - Direct Plan - Growth",              "cat":"Large & Mid Cap"},
-        {"code":120839,"name":"Kotak Equity Opportunities Fund - Direct Plan - Growth",          "cat":"Large & Mid Cap"},
-        {"code":120592,"name":"SBI Large & Midcap Fund - Direct Plan - Growth",                  "cat":"Large & Mid Cap"},
-        {"code":120488,"name":"Axis Growth Opportunities Fund - Direct Plan - Growth",           "cat":"Large & Mid Cap"},
-        {"code":135797,"name":"Nippon India Vision Fund - Direct Plan - Growth",                 "cat":"Large & Mid Cap"},
-        {"code":120175,"name":"DSP Equity Opportunities Fund - Direct Plan - Growth",            "cat":"Large & Mid Cap"},
-        {"code":135783,"name":"Canara Robeco Emerging Equities - Direct Plan - Growth",          "cat":"Large & Mid Cap"},
-        {"code":120173,"name":"UTI Core Equity Fund - Direct Plan - Growth",                     "cat":"Large & Mid Cap"},
-
-        # ── Multi Cap ────────────────────────────────────────────────────────
-        {"code":120464,"name":"ICICI Prudential Multicap Fund - Direct Plan - Growth",           "cat":"Multi Cap"},
-        {"code":148430,"name":"Nippon India Multicap Fund - Direct Plan - Growth",               "cat":"Multi Cap"},
-        {"code":120838,"name":"Kotak Multicap Fund - Direct Plan - Growth",                      "cat":"Multi Cap"},
-        {"code":120843,"name":"HDFC Multi Cap Fund - Direct Plan - Growth",                      "cat":"Multi Cap"},
-        {"code":120587,"name":"SBI Multicap Fund - Direct Plan - Growth",                        "cat":"Multi Cap"},
-        {"code":148457,"name":"Motilal Oswal Multicap Fund - Direct Plan - Growth",              "cat":"Multi Cap"},
-        {"code":148455,"name":"Axis Multicap Fund - Direct Plan - Growth",                       "cat":"Multi Cap"},
-        {"code":148461,"name":"Tata Multicap Fund - Direct Plan - Growth",                       "cat":"Multi Cap"},
-        {"code":120176,"name":"UTI Multi Cap Fund - Direct Plan - Growth",                       "cat":"Multi Cap"},
-        {"code":148460,"name":"DSP Multicap Fund - Direct Plan - Growth",                        "cat":"Multi Cap"},
-
-        # ── ELSS (Tax Saving) ────────────────────────────────────────────────
-        {"code":120503,"name":"HDFC ELSS Tax Saver Fund - Direct Plan - Growth",                 "cat":"ELSS (Tax Saving)"},
-        {"code":120466,"name":"ICICI Prudential ELSS Tax Saver Fund - Direct Plan - Growth",     "cat":"ELSS (Tax Saving)"},
-        {"code":120481,"name":"Axis Long Term Equity Fund - Direct Plan - Growth",               "cat":"ELSS (Tax Saving)"},
-        {"code":120588,"name":"SBI Long Term Equity Fund - Direct Plan - Growth",                "cat":"ELSS (Tax Saving)"},
-        {"code":120716,"name":"Mirae Asset ELSS Tax Saver Fund - Direct Plan - Growth",          "cat":"ELSS (Tax Saving)"},
-        {"code":120846,"name":"Kotak ELSS Tax Saver Fund - Direct Plan - Growth",                "cat":"ELSS (Tax Saving)"},
-        {"code":120596,"name":"Nippon India Tax Saver ELSS Fund - Direct Plan - Growth",         "cat":"ELSS (Tax Saving)"},
-        {"code":135780,"name":"Canara Robeco Equity Tax Saver Fund - Direct Plan - Growth",      "cat":"ELSS (Tax Saving)"},
-        {"code":120158,"name":"UTI Long Term Equity Fund - Direct Plan - Growth",                "cat":"ELSS (Tax Saving)"},
-        {"code":120164,"name":"DSP Tax Saver Fund - Direct Plan - Growth",                       "cat":"ELSS (Tax Saving)"},
-
-        # ── Index Fund ───────────────────────────────────────────────────────
-        {"code":120684,"name":"UTI Nifty 50 Index Fund - Direct Plan - Growth",                  "cat":"Index Fund"},
-        {"code":120478,"name":"HDFC Index Fund Nifty 50 Plan - Direct Plan - Growth",            "cat":"Index Fund"},
-        {"code":120463,"name":"ICICI Prudential Nifty 50 Index Fund - Direct Plan - Growth",     "cat":"Index Fund"},
-        {"code":120601,"name":"SBI Nifty Index Fund - Direct Plan - Growth",                     "cat":"Index Fund"},
-        {"code":120852,"name":"Nippon India Index Fund Nifty 50 Plan - Direct Plan - Growth",    "cat":"Index Fund"},
-        {"code":120850,"name":"Kotak Nifty 50 Index Fund - Direct Plan - Growth",               "cat":"Index Fund"},
-        {"code":148431,"name":"Mirae Asset Nifty 50 ETF FoF - Direct Plan - Growth",            "cat":"Index Fund"},
-        {"code":120477,"name":"HDFC Index Fund Sensex Plan - Direct Plan - Growth",              "cat":"Index Fund"},
-        {"code":120602,"name":"SBI Nifty Next 50 Index Fund - Direct Plan - Growth",             "cat":"Index Fund"},
-        {"code":120853,"name":"Nippon India Index Fund Nifty Next 50 - Direct Plan - Growth",    "cat":"Index Fund"},
-
-        # ── Hybrid ───────────────────────────────────────────────────────────
-        {"code":120519,"name":"ICICI Prudential Balanced Advantage Fund - Direct Plan - Growth", "cat":"Hybrid"},
-        {"code":120834,"name":"HDFC Balanced Advantage Fund - Direct Plan - Growth",             "cat":"Hybrid"},
-        {"code":120835,"name":"Kotak Balanced Advantage Fund - Direct Plan - Growth",            "cat":"Hybrid"},
-        {"code":120597,"name":"SBI Balanced Advantage Fund - Direct Plan - Growth",              "cat":"Hybrid"},
-        {"code":120483,"name":"Axis Balanced Advantage Fund - Direct Plan - Growth",             "cat":"Hybrid"},
-        {"code":120716,"name":"Mirae Asset Balanced Advantage Fund - Direct Plan - Growth",      "cat":"Hybrid"},
-        {"code":120177,"name":"UTI Aggressive Hybrid Fund - Direct Plan - Growth",               "cat":"Hybrid"},
-        {"code":120506,"name":"HDFC Hybrid Equity Fund - Direct Plan - Growth",                  "cat":"Hybrid"},
-        {"code":120471,"name":"ICICI Prudential Equity & Debt Fund - Direct Plan - Growth",      "cat":"Hybrid"},
-        {"code":135784,"name":"Canara Robeco Equity Hybrid Fund - Direct Plan - Growth",         "cat":"Hybrid"},
-
-        # ── Liquid ───────────────────────────────────────────────────────────
-        {"code":120820,"name":"HDFC Liquid Fund - Direct Plan - Growth",                         "cat":"Liquid"},
-        {"code":120461,"name":"ICICI Prudential Liquid Fund - Direct Plan - Growth",             "cat":"Liquid"},
-        {"code":120579,"name":"SBI Liquid Fund - Direct Plan - Growth",                          "cat":"Liquid"},
-        {"code":120833,"name":"Kotak Liquid Fund - Direct Plan - Growth",                        "cat":"Liquid"},
-        {"code":120595,"name":"Nippon India Liquid Fund - Direct Plan - Growth",                 "cat":"Liquid"},
-        {"code":120479,"name":"Axis Liquid Fund - Direct Plan - Growth",                         "cat":"Liquid"},
-        {"code":120716,"name":"Mirae Asset Cash Management Fund - Direct Plan - Growth",         "cat":"Liquid"},
-        {"code":120154,"name":"UTI Liquid Cash Plan - Direct Plan - Growth",                     "cat":"Liquid"},
-        {"code":120161,"name":"DSP Liquidity Fund - Direct Plan - Growth",                       "cat":"Liquid"},
-        {"code":135787,"name":"Canara Robeco Liquid Fund - Direct Plan - Growth",                "cat":"Liquid"},
-
-        # ── Short Duration ───────────────────────────────────────────────────
-        {"code":120821,"name":"HDFC Short Term Debt Fund - Direct Plan - Growth",                "cat":"Short Duration"},
-        {"code":120462,"name":"ICICI Prudential Short Term Fund - Direct Plan - Growth",         "cat":"Short Duration"},
-        {"code":120580,"name":"SBI Short Term Debt Fund - Direct Plan - Growth",                 "cat":"Short Duration"},
-        {"code":120834,"name":"Kotak Bond Short Term Fund - Direct Plan - Growth",               "cat":"Short Duration"},
-        {"code":"120480","name":"Axis Short Term Fund - Direct Plan - Growth",                   "cat":"Short Duration"},
-        {"code":120593,"name":"Nippon India Short Term Fund - Direct Plan - Growth",             "cat":"Short Duration"},
-        {"code":120156,"name":"UTI Short Term Income Fund - Direct Plan - Growth",               "cat":"Short Duration"},
-        {"code":120162,"name":"DSP Short Term Fund - Direct Plan - Growth",                      "cat":"Short Duration"},
-        {"code":135788,"name":"Canara Robeco Short Duration Fund - Direct Plan - Growth",        "cat":"Short Duration"},
-        {"code":148432,"name":"Mirae Asset Short Term Fund - Direct Plan - Growth",              "cat":"Short Duration"},
-
-        # ── Gold / Commodities ───────────────────────────────────────────────
-        {"code":120499,"name":"HDFC Gold Fund - Direct Plan - Growth",                           "cat":"Gold / Commodities"},
-        {"code":120473,"name":"ICICI Prudential Regular Gold Savings Fund - Direct Plan - Growth","cat":"Gold / Commodities"},
-        {"code":120582,"name":"SBI Gold Fund - Direct Plan - Growth",                            "cat":"Gold / Commodities"},
-        {"code":120844,"name":"Kotak Gold Fund - Direct Plan - Growth",                          "cat":"Gold / Commodities"},
-        {"code":120599,"name":"Nippon India Gold Savings Fund - Direct Plan - Growth",           "cat":"Gold / Commodities"},
-        {"code":120487,"name":"Axis Gold Fund - Direct Plan - Growth",                           "cat":"Gold / Commodities"},
-        {"code":120159,"name":"UTI Gold ETF FoF - Direct Plan - Growth",                         "cat":"Gold / Commodities"},
-        {"code":120163,"name":"DSP World Gold Fund of Fund - Direct Plan - Growth",              "cat":"Gold / Commodities"},
-        {"code":148433,"name":"Mirae Asset Gold ETF FoF - Direct Plan - Growth",                "cat":"Gold / Commodities"},
-        {"code":135789,"name":"Canara Robeco Gold Savings Fund - Direct Plan - Growth",         "cat":"Gold / Commodities"},
-
-        # ── Sectoral / Thematic ──────────────────────────────────────────────
-        {"code":120716,"name":"Mirae Asset Healthcare Fund - Direct Plan - Growth",              "cat":"Sectoral / Thematic"},
-        {"code":120516,"name":"ICICI Prudential Technology Fund - Direct Plan - Growth",         "cat":"Sectoral / Thematic"},
-        {"code":120500,"name":"HDFC Infrastructure Fund - Direct Plan - Growth",                 "cat":"Sectoral / Thematic"},
-        {"code":120489,"name":"Axis Technology ETF FoF - Direct Plan - Growth",                  "cat":"Sectoral / Thematic"},
-        {"code":120600,"name":"Nippon India Pharma Fund - Direct Plan - Growth",                 "cat":"Sectoral / Thematic"},
-        {"code":120590,"name":"SBI Technology Opportunities Fund - Direct Plan - Growth",        "cat":"Sectoral / Thematic"},
-        {"code":120845,"name":"Kotak Infrastructure & Economic Reform Fund - Direct Plan - Growth","cat":"Sectoral / Thematic"},
-        {"code":120160,"name":"UTI Infrastructure Fund - Direct Plan - Growth",                  "cat":"Sectoral / Thematic"},
-        {"code":148434,"name":"Tata Digital India Fund - Direct Plan - Growth",                  "cat":"Sectoral / Thematic"},
-        {"code":148435,"name":"Franklin India Technology Fund - Direct Plan - Growth",           "cat":"Sectoral / Thematic"},
-
-        # ── International / FOF ──────────────────────────────────────────────
-        {"code":120583,"name":"Parag Parikh Flexi Cap Fund (Intl allocation) - Direct - Growth", "cat":"International / FOF"},
-        {"code":120516,"name":"ICICI Prudential US Bluechip Equity Fund - Direct Plan - Growth", "cat":"International / FOF"},
-        {"code":120490,"name":"Axis Global Equity Alpha FoF - Direct Plan - Growth",             "cat":"International / FOF"},
-        {"code":120504,"name":"HDFC Developed World Indexes FoF - Direct Plan - Growth",         "cat":"International / FOF"},
-        {"code":120716,"name":"Mirae Asset NYSE FANG+ ETF FoF - Direct Plan - Growth",          "cat":"International / FOF"},
-        {"code":120591,"name":"SBI International Access - US Equity FoF - Direct Plan - Growth", "cat":"International / FOF"},
-        {"code":148436,"name":"Motilal Oswal Nasdaq 100 FoF - Direct Plan - Growth",            "cat":"International / FOF"},
-        {"code":120166,"name":"DSP US Flexible Equity Fund - Direct Plan - Growth",              "cat":"International / FOF"},
-        {"code":148437,"name":"Franklin India Feeder - Franklin US Opportunities - Direct Growth","cat":"International / FOF"},
-        {"code":148438,"name":"Navi US Total Stock Market FoF - Direct Plan - Growth",          "cat":"International / FOF"},
+    CATEGORY_KEYWORDS = [
+        ("Liquid",                "Liquid"),
+        ("Overnight",             "Overnight"),
+        ("Ultra Short",           "Ultra Short Duration"),
+        ("Low Duration",          "Low Duration"),
+        ("Short Duration",        "Short Duration"),
+        ("Short Term",            "Short Duration"),
+        ("Medium Duration",       "Medium Duration"),
+        ("Long Duration",         "Long Duration"),
+        ("Dynamic Bond",          "Dynamic Bond"),
+        ("Corporate Bond",        "Corporate Bond"),
+        ("Credit Risk",           "Credit Risk"),
+        ("Gilt",                  "Gilt"),
+        ("Floating Rate",         "Floating Rate"),
+        ("Money Market",          "Money Market"),
+        ("Banking and PSU",       "Banking & PSU"),
+        ("Banking & PSU",         "Banking & PSU"),
+        ("Large & Mid Cap",       "Large & Mid Cap"),
+        ("Large and Mid Cap",     "Large & Mid Cap"),
+        ("Large Cap",             "Large Cap"),
+        ("Mid Cap",               "Mid Cap"),
+        ("Midcap",                "Mid Cap"),
+        ("Small Cap",             "Small Cap"),
+        ("Smallcap",              "Small Cap"),
+        ("Multi Cap",             "Multi Cap"),
+        ("Multicap",              "Multi Cap"),
+        ("Flexi Cap",             "Flexi Cap"),
+        ("Flexicap",              "Flexi Cap"),
+        ("Focused",               "Focused"),
+        ("Value",                 "Value / Contra"),
+        ("Contra",                "Value / Contra"),
+        ("Dividend Yield",        "Dividend Yield"),
+        ("ELSS",                  "ELSS (Tax Saving)"),
+        ("Tax Saver",             "ELSS (Tax Saving)"),
+        ("Long Term Equity",      "ELSS (Tax Saving)"),
+        ("Infrastructure",        "Sectoral / Thematic"),
+        ("Technology",            "Sectoral / Thematic"),
+        ("Pharma",                "Sectoral / Thematic"),
+        ("Healthcare",            "Sectoral / Thematic"),
+        ("Banking",               "Sectoral / Thematic"),
+        ("Financial Services",    "Sectoral / Thematic"),
+        ("Consumption",           "Sectoral / Thematic"),
+        ("Energy",                "Sectoral / Thematic"),
+        ("Manufacturing",         "Sectoral / Thematic"),
+        ("Defence",               "Sectoral / Thematic"),
+        ("ESG",                   "Sectoral / Thematic"),
+        ("Sectoral",              "Sectoral / Thematic"),
+        ("Thematic",              "Sectoral / Thematic"),
+        ("PSU",                   "Sectoral / Thematic"),
+        ("Nifty",                 "Index Fund"),
+        ("Sensex",                "Index Fund"),
+        ("Index",                 "Index Fund"),
+        ("ETF",                   "ETF"),
+        ("Exchange Traded",       "ETF"),
+        ("Gold",                  "Gold / Commodities"),
+        ("Silver",                "Gold / Commodities"),
+        ("Commodity",             "Gold / Commodities"),
+        ("International",         "International / FOF"),
+        ("Overseas",              "International / FOF"),
+        ("Global",                "International / FOF"),
+        ("World",                 "International / FOF"),
+        ("US ",                   "International / FOF"),
+        ("Nasdaq",                "International / FOF"),
+        ("NYSE",                  "International / FOF"),
+        ("Fund of Fund",          "International / FOF"),
+        ("Fund of Funds",         "International / FOF"),
+        ("FOF",                   "International / FOF"),
+        ("Feeder",                "International / FOF"),
+        ("Balanced Advantage",    "Hybrid"),
+        ("Dynamic Asset",         "Hybrid"),
+        ("Equity Savings",        "Hybrid"),
+        ("Arbitrage",             "Arbitrage"),
+        ("Aggressive Hybrid",     "Hybrid"),
+        ("Conservative Hybrid",   "Hybrid"),
+        ("Hybrid",                "Hybrid"),
+        ("Balanced",              "Hybrid"),
+        ("Retirement",            "Retirement"),
+        ("Children",              "Children"),
+        ("Child",                 "Children"),
     ]
-    return jsonify({"funds": FUNDS, "total": len(FUNDS)})
+
+    def extract_category(name):
+        n = name.upper()
+        for keyword, cat in CATEGORY_KEYWORDS:
+            if keyword.upper() in n:
+                return cat
+        return "Other"
+
+    try:
+        r = requests.get("https://api.mfapi.in/mf", timeout=15)
+        r.raise_for_status()
+        raw = r.json()
+
+        funds = []
+        for f in raw:
+            name = f.get("schemeName", "").strip()
+            name_upper = name.upper()
+
+            # Only Direct + Growth, exclude IDCW/Dividend/Payout variants
+            if "DIRECT" not in name_upper:
+                continue
+            if "GROWTH" not in name_upper:
+                continue
+            if any(x in name_upper for x in [
+                "IDCW", "DIVIDEND", "BONUS", "PAYOUT",
+                "REINVEST", "ANNUAL", "MONTHLY", "QUARTERLY", "WEEKLY"
+            ]):
+                continue
+
+            funds.append({
+                "code": f.get("schemeCode"),
+                "name": name,
+                "cat":  extract_category(name),
+            })
+
+        result = {"funds": funds, "total": len(funds)}
+        mf_list._cache = {"ts": time.time(), "data": result}
+        return jsonify(result)
+
+    except Exception as e:
+        # Return stale cache if available
+        if cache:
+            return jsonify(cache['data'])
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/mf_search")
 def mf_search():

@@ -1816,12 +1816,7 @@ let mfAllFunds      = [];       // full list loaded once
 let mfFundsLoaded   = false;
 let mfSearchTimer   = null;
 let mfActiveCat     = 'All';
-const MF_CATEGORIES = [
-    'All','Large Cap','Mid Cap','Small Cap','Flexi Cap','Multi Cap',
-    'Large & Mid Cap','ELSS (Tax Saving)','Hybrid','Index Fund','ETF',
-    'Sectoral / Thematic','Liquid','Short Duration','Corporate Bond',
-    'Gold / Commodities','International / FOF','Arbitrage','Other'
-];
+let MF_CATEGORIES   = ['All']; // built dynamically from API data
 
 function mfSearchDebounce() {
     clearTimeout(mfSearchTimer);
@@ -1843,16 +1838,20 @@ function initMFPanel() {
 }
 
 function renderMFCats() {
-    // Build category pill counts
+    // Build categories dynamically from actual fund data
     const counts = {};
     mfAllFunds.forEach(f => { counts[f.cat] = (counts[f.cat]||0)+1; });
-    const pills = MF_CATEGORIES.filter(c => c==='All' || counts[c])
-        .map(c => {
-            const cnt = c==='All' ? mfAllFunds.length : (counts[c]||0);
-            return `<button class="mf-cat-btn ${c===mfActiveCat?'active':''}"
-                onclick="setMFCat('${c}')">${c} <span class="mf-cat-count">${cnt}</span></button>`;
-        }).join('');
-    // Insert cat bar before content — only once
+
+    // Sort categories alphabetically, All first
+    const sorted = Object.keys(counts).sort();
+    MF_CATEGORIES = ['All', ...sorted];
+
+    const pills = MF_CATEGORIES.map(c => {
+        const cnt = c==='All' ? mfAllFunds.length : (counts[c]||0);
+        return `<button class="mf-cat-btn ${c===mfActiveCat?'active':''}"
+            onclick="setMFCat('${c}')">${c} <span class="mf-cat-count">${cnt.toLocaleString('en-IN')}</span></button>`;
+    }).join('');
+
     if (!$('#mfCatBar').length) {
         $('#mfContent').before(`<div id="mfCatBar" class="mf-cat-bar">${pills}</div>`);
     } else {
@@ -1887,7 +1886,7 @@ function runMFSearch() {
         const total = mfActiveCat==='All' ? mfAllFunds.length : mfAllFunds.filter(f=>f.cat===mfActiveCat).length;
         $('#mfContent').html(`<div class="mf-empty-state"><i class="fas fa-search"></i>
             <p>Search within ${mfActiveCat==='All'?'all funds':mfActiveCat}</p>
-            <span>${total.toLocaleString('en-IN')} funds available</span></div>`);
+            <span>${total.toLocaleString('en-IN')} Direct Growth funds available · Type to search</span></div>`);
         return;
     }
 
