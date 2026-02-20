@@ -1071,150 +1071,171 @@ select.form-control option {
 }
 
 /* ── Mobile (≤ 768px) ────────────────────────────────────────────────────── */
+
+/* Sidebar overlay — always present, hidden by default */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 998;
+}
+.sidebar-overlay.active { display: block; }
+
 @media (max-width: 768px) {
 
-  /* Layout: stack sidebar off-screen, full-width content */
-  .row {
-    flex-wrap: nowrap !important;
-    position: relative;
+  /* Kill Bootstrap's flex row — use block stacking */
+  .container-fluid,
+  .container-fluid .row {
+    display: block !important;
+    height: auto !important;
+    min-height: 100vh;
   }
 
+  /* Sidebar: fixed drawer off-screen left */
   .col-md-3.menu-sidebar {
     position: fixed !important;
-    left: -280px !important;
-    top: 0;
-    height: 100vh !important;
+    top: 0 !important;
+    left: -270px !important;
     width: 260px !important;
-    z-index: 1000;
-    transition: left 0.3s ease;
+    max-width: 260px !important;
+    flex: none !important;
+    height: 100vh !important;
+    z-index: 999 !important;
+    transition: left 0.28s cubic-bezier(.4,0,.2,1);
     box-shadow: none;
+    overflow-y: auto;
   }
 
   .col-md-3.menu-sidebar.mobile-open {
     left: 0 !important;
-    box-shadow: 4px 0 24px rgba(0,0,0,0.2);
+    box-shadow: 6px 0 32px rgba(0,0,0,0.22) !important;
   }
 
-  /* Overlay behind open sidebar */
-  .sidebar-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.4);
-    z-index: 999;
-  }
-  .sidebar-overlay.active { display: block; }
-
-  /* Main content takes full width */
+  /* Main content: full width, sits below mobile topbar */
   .col-md-9.main-content {
-    flex: 1 1 100% !important;
-    max-width: 100% !important;
+    display: block !important;
     width: 100% !important;
+    max-width: 100% !important;
+    flex: none !important;
+    height: auto !important;
+    min-height: calc(100vh - 56px);
+    overflow-y: auto;
+    padding-top: 0 !important;
   }
 
-  /* Mobile top bar with hamburger */
+  /* Mobile topbar */
   .mobile-topbar {
     display: flex !important;
     align-items: center;
     gap: 12px;
-    padding: 14px 18px;
+    padding: 12px 16px;
     background: #fff;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1.5px solid #e2e8f0;
     position: sticky;
     top: 0;
     z-index: 100;
+    height: 56px;
+    box-sizing: border-box;
   }
 
   .mobile-hamburger {
     background: none;
     border: none;
-    font-size: 1.2rem;
+    font-size: 1.25rem;
     color: #1e293b;
     cursor: pointer;
-    padding: 6px;
+    padding: 6px 8px;
     border-radius: 8px;
     line-height: 1;
+    display: flex;
+    align-items: center;
   }
-  .mobile-hamburger:hover { background: #f1f5f9; }
 
   .mobile-topbar-title {
     font-weight: 700;
-    font-size: 0.95rem;
+    font-size: 1rem;
     color: #1e293b;
   }
 
-  /* Card header — hide on mobile (replaced by topbar) */
-  .card-header { display: none; }
+  /* Hide desktop card header on mobile */
+  .card-header { display: none !important; }
 
-  /* Home page */
-  .home-page { padding: 20px 16px; }
-  .home-hero { text-align: center; padding: 20px 0 16px; }
-  .home-hero h1 { font-size: 1.5rem; }
-  .home-hero p  { font-size: 0.88rem; }
+  /* Home page content */
+  .home-page { padding: 16px 14px 30px; }
+  .home-hero { text-align: center; padding: 16px 0 14px; }
+  .home-hero h1 { font-size: 1.45rem; line-height: 1.3; }
+  .home-hero p  { font-size: 0.85rem; }
 
-  /* Feature cards — single column */
+  /* Feature cards — single column stacked */
   .features-grid {
-    grid-template-columns: 1fr !important;
+    display: flex !important;
+    flex-direction: column !important;
     gap: 10px;
   }
-  .chat-feature-card { grid-column: 1 !important; grid-row: auto !important; }
+  .chat-feature-card { grid-column: unset !important; grid-row: unset !important; }
 
-  /* Compact feature cards on mobile */
-  .feature-card { padding: 14px 16px; flex-direction: row; align-items: center; gap: 14px; }
-  .feature-icon { width: 40px; height: 40px; font-size: 1rem; flex-shrink: 0; }
-  .feature-body h3 { font-size: 0.9rem; }
-  .feature-body p  { font-size: 0.78rem; display: none; } /* hide desc on mobile */
+  .feature-card {
+    padding: 14px 14px;
+    flex-direction: row !important;
+    align-items: center;
+    gap: 14px;
+    min-height: unset;
+  }
+  .feature-icon { width: 42px !important; height: 42px !important; font-size: 1rem !important; flex-shrink: 0; }
+  .feature-body { flex: 1; min-width: 0; }
+  .feature-body h3 { font-size: 0.9rem; margin: 0 0 2px; }
+  .feature-body p  { display: none; }
   .feature-tags { display: none; }
   .feature-arrow { margin-left: auto; flex-shrink: 0; }
 
-  /* Market widgets — 1 column on mobile */
-  .market-widgets-grid { grid-template-columns: 1fr !important; gap: 10px; }
+  /* Market widgets */
+  .market-widgets-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+  }
 
-  /* Forms */
-  .input-form { padding: 20px 16px; }
-  .stepsip-summary { grid-template-columns: 1fr 1fr; }
+  /* Forms and results */
+  .input-form { padding: 16px 14px; }
+  #resultsContent { padding: 14px; }
+  .stepsip-summary { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stepsip-table { font-size: 0.76rem; }
+  .stepsip-table th, .stepsip-table td { padding: 7px 5px; }
 
-  /* Result cards */
-  #resultsContent { padding: 16px; }
-  .stepsip-table { font-size: 0.78rem; }
-  .stepsip-table th, .stepsip-table td { padding: 8px 6px; }
+  /* Scrollable pill bars */
+  .mf-cat-bar,
+  .gloss-cats,
+  .news-sources-bar {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 6px;
+  }
+  .mf-cat-btn, .gloss-cat-btn, .news-src-chip { flex-shrink: 0; }
 
-  /* MF category bar — horizontal scroll */
-  .mf-cat-bar { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
-  .mf-cat-btn { flex-shrink: 0; }
-
-  /* Glossary category pills */
-  .gloss-cats { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
-  .gloss-cat-btn { flex-shrink: 0; }
-
-  /* News source chips */
-  .news-sources-bar { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
-  .news-src-chip { flex-shrink: 0; }
-
-  /* SFC stock card */
+  /* Stock card */
   .sfc-row-grid { grid-template-columns: 1fr 1fr; }
-  .sfc-big-price { font-size: 1.8rem; }
+  .sfc-big-price { font-size: 1.7rem; }
 
-  /* EMI/FD hero */
-  .emi-hero-value, .fd-hero-value { font-size: 1.8rem; }
+  /* Calculator heroes */
+  .emi-hero-value, .fd-hero-value, .zakat-hero-value { font-size: 1.75rem; }
 
-  /* Zakat nisab bar — stack vertically */
+  /* Zakat nisab */
   .zakat-nisab-bar { flex-direction: column; gap: 10px; }
 
-  /* Currency grid */
-  #currencyContent .currency-grid { grid-template-columns: repeat(2, 1fr) !important; }
-
-  /* Chat panel */
+  /* Chat */
   #messageArea { padding: 10px 12px; }
-  .msg_cotainer, .msg_cotainer_send { max-width: 90%; font-size: 0.88rem; }
+  .msg_cotainer, .msg_cotainer_send { max-width: 88%; font-size: 0.87rem; }
+
+  /* MF search */
+  .mf-search-input { font-size: 0.9rem; }
 }
 
-/* ── Very small phones (≤ 380px) ─────────────────────────────────────────── */
-@media (max-width: 380px) {
-  .home-hero h1 { font-size: 1.3rem; }
-  .stepsip-summary { grid-template-columns: 1fr; }
+/* ── Very small phones (≤ 390px) ─────────────────────────────────────────── */
+@media (max-width: 390px) {
+  .home-hero h1 { font-size: 1.25rem; }
+  .stepsip-summary { grid-template-columns: 1fr 1fr; }
   .emi-hero-value, .fd-hero-value { font-size: 1.5rem; }
-  .zakat-hero-value { font-size: 1.8rem; }
 }
 /* ── Market News Panel ──────────────────────────────────────────────────── */
 #newsPanel {
